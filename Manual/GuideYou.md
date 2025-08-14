@@ -20,7 +20,7 @@ Additionally, Illumina short-read sequencing provided 10X Chromium libraries for
 |      **Aethina tumida**      | **Nitidulidae**          | **GCA_024364675.1** |
 |    **Agrilus planipennis**    | **Buprestidae**          | **GCA_000699045.2** |
 | **Anoplophora glabripennis** | **Cerambycidae**         | **GCA_000390285.2** |
-| **Callosobruchus maculatus** | *Chrysomelidae*              | **GCA_951848785.1** |
+| **Callosobruchus maculatus** | ***Chrysomelidae***    | **GCA_951848785.1** |
 |  **Dendroctonus ponderosae**  | **Curculionidae**        | **GCA_020466585.2** |
 |   **Diabrotica virgifera**   | **Chrysomelidae**        | **GCA_917563875.2** |
 |    **Hypothenemus hampei**    | **Curculionidae**        | **GCA_013372445.1** |
@@ -51,9 +51,9 @@ All the data was downloaded from geneBank from RefSeq for the following beetle s
 
 **Dvir**, Diabrotica virgifera;
 
-**Hham**, Hypothenemus hampei;
+**Hham**, Hypothenemus hampei; [OSF data repository](https://osf.io/vgb5e/files/osfstorage?view_only=1dc51c5f4964450d97887ba947e814ee)
 
-**Ityp**, Ips typographus;
+**Ityp**, Ips typographus; [ Ips typographus genome annotations and supporting data ](https://figshare.com/articles/dataset/Ips_typographus_genome_annotations_and_supporting_data/14503065)
 
 **Ldec**, Leptinotarsa decemlineata;
 
@@ -64,5 +64,20 @@ All the data was downloaded from geneBank from RefSeq for the following beetle s
 **Tcas**, Tribolium castaneum;
 
 ## Analysis
+
+### **Genome size estimation and identification of telomeres**
+
+### **Transcriptome sequencing, read mapping, and assembly**
+
+### **Genome annotation and quality assessment**
+
+### **Functional annotation and orthologs gene detection**
+
+### **Gene family evolution (expansions and contractions)**
+
+### **Reconstruction of phylogenetic trees**
+
+
+
 
 ## Results
