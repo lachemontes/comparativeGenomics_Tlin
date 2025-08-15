@@ -4,6 +4,8 @@
 
 This project focuses on the comparative genomics and orthology analysis of  *Trypodendron lineatum* , a Holarctic pest with a unique xylem-boring behavior and fungal symbiosis. By assembling and annotating its genome using cutting-edge sequencing technologies, we revealed insights into its chemosensory adaptations, gene family dynamics, and evolutionary specialization. These findings contribute to understanding the functional, evolutionary, and ecological implications of its lifestyle and interactions within forest ecosystems.
 
+## 
+
 ## Data description and collection
 
 For *T.lineatum*:
@@ -66,6 +68,34 @@ All the data was downloaded from geneBank from RefSeq for the following beetle s
 ## Analysis
 
 ### **Genome size estimation and identification of telomeres**
+
+1. **Install Jellyfish**: Make sure you have Jellyfish installed on your system. You can download via conda.
+2. **Prepare your sequencing data: Ensure you have your raw sequencing data in a format supported by Jellyfish (e.g., FASTQ or FASTA).**
+3. **Count k-mers: Use Jellyfish to count the occurrences of k-mers in your sequencing data. The basic command to do this is:**
+
+```bash
+# create an enviroment for Jellyfish
+conda create --name Jellyfish
+
+# Install jellyfish
+
+conda activate Jellyfish
+conda install -c conda-forge jellyfish
+```
+
+```bash
+jellyfish count -m k -s <hash_size> -o <output_file> <input_file>
+```
+
+
+1. **K-mer size (k):**
+   * **For nanopore sequencing data, longer k-mer sizes are generally preferred. This is because nanopore reads tend to be more error-prone compared to short-read sequencing technologies like Illumina. Longer k-mers can help reduce the impact of errors on the genome size estimation.**
+   * **A commonly used range for k is between 17 and 31 for nanopore data. You can start with a larger k value and gradually decrease it to find the best balance between sensitivity and accuracy.**
+2. **Hash size (-s):**
+   * **The hash size determines the number of hash slots used by Jellyfish to store the k-mer counts. A larger hash size allows you to store more k-mers but requires more memory. Since nanopore data can be memory-intensive, it's crucial to choose an appropriate hash size.**
+   * **A common choice is to use a hash size of 1 to 2 times the size of the available memory. For example, if you have 16GB of RAM, you can try using a hash size of 16GB or 32GB.**
+   * **If your data is larger than the available memory, you might need to consider distributed computing options or using a smaller subset of the data for analysis.**
+
 
 ### **Transcriptome sequencing, read mapping, and assembly**
 
