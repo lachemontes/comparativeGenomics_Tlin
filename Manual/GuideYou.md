@@ -95,7 +95,7 @@ jellyfish count -m k -s <hash_size> -o <output_file> <input_file>
 
 ### **Transcriptome sequencing, read mapping, and assembly**
 
-Before the genome annotation with [MAKER](https://github.com/Yandell-Lab/maker) and [BRAKER](https://github.com/Gaius-Augustus/BRAKER), I did a transciptome assembly withRNA-seq reads from *T. lineatum* from six females and six males. First, the reads were aligned to the reference genome using [HISAT2](https://daehwankimlab.github.io/hisat2/manual/), which provides a fast and sensitive spliced alignment suitable for insect transcriptomes. This step ensured accurate mapping across exon–intron boundaries and enabled the identification of expressed genes across different tissues. In parallel, I generated a ***de novo* transcriptome assembly** with [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki) to capture transcripts that may be missing, fragmented, or incompletely represented in the genome assembly. Combining both the genome-guided mapping results and the *de novo* assembly provides a more comprehensive view of the expressed gene repertoire, supporting downstream annotation steps and increasing confidence in gene model predictions.
+Before the genome annotation with [MAKER](https://github.com/Yandell-Lab/maker) and [BRAKER](https://github.com/Gaius-Augustus/BRAKER), I did a transciptome assembly withRNA-seq reads from *T. lineatum* from six females and six males. First, the reads were aligned to the reference genome using [HISAT2](https://daehwankimlab.github.io/hisat2/manual/), which provides a fast and sensitive spliced alignment suitable for insect transcriptomes. This step ensured accurate mapping across exon–intron boundaries and enabled the identification of expressed genes across different tissues. In parallel, I generated a ***de novo* transcriptome assembly** with [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki) to capture transcripts that may be missing, fragmented, or incompletely represented in the genome assembly. Finally, to find the coding regions within transcrpts I used [Transdecoder](https://github.com/TransDecoder/TransDecoder/wiki).
 
 #### Genome index
 
@@ -165,7 +165,6 @@ output="${output_dir}/${sample}.sam"
 hisat2 --dta -p 16 -x /proj/snic2022-23-541/Beetle_project/Analysis/HISAT/Genome_Index -1 "${r1}" -2 "${r2}" -S "${output}"
 
 ```
-
 
 #### De novo assembly with Trinity
 
@@ -239,6 +238,27 @@ Trinity --seqType fq --left "/proj/snic2022-23-541/Beetle_project/Analysis/Trimg
 
 ```
 
+
+#### Transdecoder
+
+```bash
+#!/bin/bash
+#SBATCH -A naiss2023-5-461
+#SBATCH -p core -n 12
+#SBATCH -t 12:00:00
+#SBATCH -J Single_Transdecoder
+#BATCH --mail-type=all
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+
+
+module load bioinfo-tools
+module load TransDecoder/5.7.0
+
+
+TransDecoder.LongOrfs -t Transcriptome_file.fasta
+TransDecoder.Predict -t Transcriptome_file.fasta
+
+```
 
 ### **Genome annotation and quality assessment**
 
