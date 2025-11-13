@@ -4,8 +4,6 @@
 
 This project focuses on the comparative genomics and orthology analysis of  *Trypodendron lineatum* , a Holarctic pest with a unique xylem-boring behavior and fungal symbiosis. By assembling and annotating its genome using cutting-edge sequencing technologies, we revealed insights into its chemosensory adaptations, gene family dynamics, and evolutionary specialization. These findings contribute to understanding the functional, evolutionary, and ecological implications of its lifestyle and interactions within forest ecosystems.
 
-## 
-
 ## Data description and collection
 
 For *T.lineatum*:
@@ -87,7 +85,6 @@ conda install -c conda-forge jellyfish
 jellyfish count -m k -s <hash_size> -o <output_file> <input_file>
 ```
 
-
 1. **K-mer size (k):**
    * **For nanopore sequencing data, longer k-mer sizes are generally preferred. This is because nanopore reads tend to be more error-prone compared to short-read sequencing technologies like Illumina. Longer k-mers can help reduce the impact of errors on the genome size estimation.**
    * **A commonly used range for k is between 17 and 31 for nanopore data. You can start with a larger k value and gradually decrease it to find the best balance between sensitivity and accuracy.**
@@ -96,8 +93,79 @@ jellyfish count -m k -s <hash_size> -o <output_file> <input_file>
    * **A common choice is to use a hash size of 1 to 2 times the size of the available memory. For example, if you have 16GB of RAM, you can try using a hash size of 16GB or 32GB.**
    * **If your data is larger than the available memory, you might need to consider distributed computing options or using a smaller subset of the data for analysis.**
 
-
 ### **Transcriptome sequencing, read mapping, and assembly**
+
+Before the genome annotation with [MAKER](https://github.com/Yandell-Lab/maker) and [BRAKER](https://github.com/Gaius-Augustus/BRAKER), I did a transciptome assembly withRNA-seq reads from *T. lineatum* from six females and six males. First, the reads were aligned to the reference genome using [HISAT2](https://daehwankimlab.github.io/hisat2/manual/), which provides a fast and sensitive spliced alignment suitable for insect transcriptomes. This step ensured accurate mapping across exon–intron boundaries and enabled the identification of expressed genes across different tissues. In parallel, I generated a ***de novo* transcriptome assembly** with [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki) to capture transcripts that may be missing, fragmented, or incompletely represented in the genome assembly. Combining both the genome-guided mapping results and the *de novo* assembly provides a more comprehensive view of the expressed gene repertoire, supporting downstream annotation steps and increasing confidence in gene model predictions.
+
+#### Genome index
+
+```bash
+#!/bin/bash
+#SBATCH -A snic2022-5-454
+#SBATCH -p core -n 16
+#SBATCH -t 12:00:00
+#SBATCH -J HISAT_Mapping
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+#SBATCH --output=hisat_%A_%a.out
+#SBATCH --error=hisat_%A_%a.err
+
+
+# Module load
+
+module load bioinfo-tools HISAT2/2.2.1
+
+# Genome Index
+
+hisat2-build -p 16 /proj/snic2022-23-541/Beetle_project/Data/Genome/Trypodendron_lineatum.fna Genome_Index
+
+```
+
+#### Mapping
+
+```bash
+#!/bin/bash
+#SBATCH -A snic2022-5-454
+#SBATCH -p node
+#SBATCH -t 1-00:00:00
+#SBATCH -J HISAT_Tlin
+#SBATCH --array=1-22
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+#SBATCH --output=hisat_%A_%a.out
+#SBATCH --error=hisat_%A_%a.err
+
+
+# Module load
+
+module load bioinfo-tools HISAT2/2.2.1
+
+# Genome Index
+
+#hisat2-build -p 20 /proj/snic2022-23-541/Spider_project/Data/Genome/Genome_assembly_ASM1534279v1/ncbi_dataset/data/GCA_015342795.1/GCA_015342795.1_ASM1534279v1_genomic.fna Genome_Index
+
+
+# Define input and output directories
+input_dir="/proj/snic2022-23-541/Beetle_project/Analysis/Trimgalore/"
+output_dir="/proj/snic2022-23-541/Beetle_project/Analysis/HISAT"
+genome_index="/proj/snic2022-23-541/Beetle_project/Analysis/HISAT/Genome_Index"
+
+
+# Define sample name
+sample=$(sed -n "${SLURM_ARRAY_TASK_ID} p" List.txt)
+
+# Define input files
+r1="${input_dir}/${sample}_R1_001_val_1.fq.gz"
+r2="${input_dir}/${sample}_R2_001_val_2.fq.gz"
+
+# Define output file
+output="${output_dir}/${sample}.sam"
+
+# Run HISAT2
+hisat2 --dta -p 16 -x /proj/snic2022-23-541/Beetle_project/Analysis/HISAT/Genome_Index -1 "${r1}" -2 "${r2}" -S "${output}"
+
+```
+
 
 ### **Genome annotation and quality assessment**
 
@@ -106,8 +174,5 @@ jellyfish count -m k -s <hash_size> -o <output_file> <input_file>
 ### **Gene family evolution (expansions and contractions)**
 
 ### **Reconstruction of phylogenetic trees**
-
-
-
 
 ## Results
