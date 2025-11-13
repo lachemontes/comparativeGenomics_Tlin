@@ -305,7 +305,16 @@ TransDecoder.Predict -t Transcriptome_file.fasta
 
 ```
 
-### **Genome annotation and quality assessment**
+### **Genome annotation and quality assessment** 
+
+Before chatGPT or any other AI, I got so much hekp frpom this two guys, that have docuemted pretty well their genome annottation and have inspired me to do the same. Thanks to [Rick Masonbrink](https://bioinformaticsworkbook.org/dataAnalysis/GenomeAnnotation/Intro_To_Maker.html#gsc.tab=0) and [Daren Card](https://gist.github.com/darencard/bb1001ac1532dd4225b030cf0cd61ce2). 
+
+
+#### MAKER
+
+
+#### BRAKER
+
 
 ### **Functional annotation and orthologs gene detection**
 
