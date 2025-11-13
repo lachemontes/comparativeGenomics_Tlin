@@ -67,6 +67,8 @@ All the data was downloaded from geneBank from RefSeq for the following beetle s
 
 ### **Genome size estimation and identification of telomeres**
 
+#### Jellyfish and Genomescope
+
 1. **Install Jellyfish**: Make sure you have Jellyfish installed on your system. You can download via conda.
 2. **Prepare your sequencing data: Ensure you have your raw sequencing data in a format supported by Jellyfish (e.g., FASTQ or FASTA).**
 3. **Count k-mers: Use Jellyfish to count the occurrences of k-mers in your sequencing data. The basic command to do this is:**
@@ -86,14 +88,38 @@ jellyfish count -m k -s <hash_size> -o <output_file> <input_file>
 ```
 
 1. **K-mer size (k):**
+
    * **For nanopore sequencing data, longer k-mer sizes are generally preferred. This is because nanopore reads tend to be more error-prone compared to short-read sequencing technologies like Illumina. Longer k-mers can help reduce the impact of errors on the genome size estimation.**
    * **A commonly used range for k is between 17 and 31 for nanopore data. You can start with a larger k value and gradually decrease it to find the best balance between sensitivity and accuracy.**
 2. **Hash size (-s):**
+
    * **The hash size determines the number of hash slots used by Jellyfish to store the k-mer counts. A larger hash size allows you to store more k-mers but requires more memory. Since nanopore data can be memory-intensive, it's crucial to choose an appropriate hash size.**
    * **A common choice is to use a hash size of 1 to 2 times the size of the available memory. For example, if you have 16GB of RAM, you can try using a hash size of 16GB or 32GB.**
-   * **If your data is larger than the available memory, you might need to consider distributed computing options or using a smaller subset of the data for analysis.**
+   * **If your data is larger than the available memory, you might need to consider distributed computing options or using a smaller subset of the data for analysis Transcriptome sequencing, read mapping, and assembly.**
 
-### **Transcriptome sequencing, read mapping, and assembly**
+For [Genomescope](https://github.com/tbenavi1/genomescope2.0), I cloned the repository like this:
+
+```bash
+git clone https://github.com/tbenavi1/genomescope2.0.git
+ls
+cd genomescope2.0
+Rscript install.R
+genomescope.R -i ../reads.histo -o ../Genomescope/ -k 21
+ls
+cd R/
+ls
+cd ..
+
+# commadn to run
+./genomescope.R -i ../reads.histo -o ../Genomescope/ -k 21
+
+
+```
+
+#### Find telomers with 
+
+
+### Mapping and transcriptome assembly
 
 Before the genome annotation with [MAKER](https://github.com/Yandell-Lab/maker) and [BRAKER](https://github.com/Gaius-Augustus/BRAKER), I did a transciptome assembly withRNA-seq reads from *T. lineatum* from six females and six males. First, the reads were aligned to the reference genome using [HISAT2](https://daehwankimlab.github.io/hisat2/manual/), which provides a fast and sensitive spliced alignment suitable for insect transcriptomes. This step ensured accurate mapping across exon–intron boundaries and enabled the identification of expressed genes across different tissues. In parallel, I generated a ***de novo* transcriptome assembly** with [Trinity](https://github.com/trinityrnaseq/trinityrnaseq/wiki) to capture transcripts that may be missing, fragmented, or incompletely represented in the genome assembly. Finally, to find the coding regions within transcrpts I used [Transdecoder](https://github.com/TransDecoder/TransDecoder/wiki).
 
@@ -238,7 +264,6 @@ Trinity --seqType fq --left "/proj/snic2022-23-541/Beetle_project/Analysis/Trimg
 
 ```
 
-
 #### Transdecoder
 
 ```bash
@@ -261,6 +286,7 @@ TransDecoder.Predict -t Transcriptome_file.fasta
 ```
 
 ### **Genome annotation and quality assessment**
+
 
 ### **Functional annotation and orthologs gene detection**
 
