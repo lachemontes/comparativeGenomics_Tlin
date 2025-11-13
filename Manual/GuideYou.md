@@ -116,8 +116,28 @@ cd ..
 
 ```
 
-#### Find telomers with 
+#### Find telomers with Tidk
 
+[Tidk](`https://github.com/tolkit/telomeric-identifier) is a toolkit to identify and visualise telomeric repeats for the Darwin Tree of Life genomes, available via conda (**you're best friend**). `tidk` works especially well on chromosomal genomes, but can also work on PacBio HiFi reads well (see [the telomeric repeat database](https://github.com/tolkit/a-telomeric-repeat-database) for many examples). There are a few modules in the tool, which may be useful to anyone investigating telomeric repeat sequences in a genome. You can also try this python script [FindTelomers.py](https://github.com/JanaSperschneider/FindTelomeres)
+
+| **Sequence** | **Reference**                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| **TTAGG**    | **FindTelomers.py**                                                                                     |
+| **TTAGGG**   | **FindTelomers.py**                                                                                     |
+| **CCCTAA**   | [Prušáková et al., 2021](https://www.nature.com/articles/s41598-021-92705-y#auth-Daniela-Pru__kov_-Aff1-Aff2) |
+| **TTAGG**    | Prušáková et al., 2021                                                                                     |
+| **TCAGG**    | Prušáková et al., 2021                                                                                     |
+| **TTAGGG**   | Prušáková et al., 2021                                                                                     |
+
+```bash
+#Usage: tidk search [OPTIONS] --string <STRING> --output <OUTPUT> --dir <DIR> <FASTA>
+# here an example
+
+tidk search --string TTAGGG --output out_TTAGGG --dir 2_TTAGGG --extension tsv  Trypodendron_lineatum.fasta
+
+tidk search --string CCCTAA --output out_CCCTAA_Ityp --dir 3_CCCTAA --extension tsv  Trypodendron_lineatum.fasta
+
+```
 
 ### Mapping and transcriptome assembly
 
@@ -286,7 +306,6 @@ TransDecoder.Predict -t Transcriptome_file.fasta
 ```
 
 ### **Genome annotation and quality assessment**
-
 
 ### **Functional annotation and orthologs gene detection**
 
