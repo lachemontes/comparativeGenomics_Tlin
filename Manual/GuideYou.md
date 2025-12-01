@@ -1232,11 +1232,10 @@ The final results from CAFE were then visualized using the dedicated plotting to
 
 
 
-
 ---
-## 🎉 Conclusion: Moving Forward
+## Conclusion: Moving Forward
 
-The iterative process of annotation and comparative genomics is a continuous cycle of improvement and learning. We conclude this tutorial by embracing the spirit of innovation in bioinformatics. It could be better, I know! 
+The iterative process of annotation and comparative genomics is a continuous cycle of improvement and learning. I conclude this tutorial by embracing the spirit of innovation in bioinformatics. It could be better, I know!  I hope you finish on time!!!
 
 > **“The most dangerous phrase in the language is, ‘We've always done it this way.’”**
 >
