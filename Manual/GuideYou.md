@@ -309,8 +309,58 @@ TransDecoder.Predict -t Transcriptome_file.fasta
 
 Before **chatGPT** or any other AI tools existed, I got so much help from this two guys, Thanks to [Rick Masonbrink](https://bioinformaticsworkbook.org/dataAnalysis/GenomeAnnotation/Intro_To_Maker.html#gsc.tab=0) and [Daren Card](https://gist.github.com/darencard/bb1001ac1532dd4225b030cf0cd61ce2). They documented their genome annotation pipelines so well that they inspired me to create and share my own.  I also find it quite funny that the first author of **MAKER** has the same last name as the reggaeton singer **Yandel. Find here some playlist that helped me too** [Yandel spotify](https://open.spotify.com/artist/0eHQ9o50hj6ZDNBt6Ys1sD) and [YANDEL youtube](https://www.youtube.com/channel/UC-LRORSJOy5cOBd5TVVQ6Fw)
 
+#### RepeatMasker
+
+```bash
+#!/bin/sh
+#SBATCH -A snic2022-5-454
+#SBATCH -p node
+#SBATCH -t 7-00:00:00
+#SBATCH -J RepeatMasker
+#SBATCH --mail-type=All
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+
+
+
+module load bioinfo-tools
+module load RepeatMasker/4.1.0
+
+#RepeatMasker -species Drosophila -lib /proj/snic2022-23-541/Beetle_project/Analysis/RepeatModeler/Tlineatum_db-families.fa /proj/snic2022-23-541/Beetle_project/Data/Genome/Trypodendron_lineatum.fna
+
+RepeatMasker -lib /proj/snic2022-23-541/Beetle_project/Analysis/RepeatModeler/Tlineatum_db-families.fa /proj/snic2022-23-541/Beetle_project/Data/Genome/Trypodendron_lineatum.fna
+
+
+```
+
+#### RepeatModeler
+
+```bash
+#!/bin/bash
+#SBATCH -A snic2022-5-454
+#SBATCH -p node
+#SBATCH -t 10-00:00:00
+#SBATCH -J RepeatModeler_Tlineatum
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+
+
+module purge
+module load bioinfo-tools RepeatModeler/2.0.1
+
+# Build RepeatModeler database from input genome file
+BuildDatabase -name Tlineatum_db -engine ncbi /proj/snic2022-23-541/Beetle_project/Data/Genome/Trypodendron_lineatum.fna
+
+# Run RepeatModeler with 32 CPU cores and 120 GB of memory
+RepeatModeler -pa 32 -engine ncbi -database Tlineatum_db &> repeatmodeler.log
+
+
+```
 
 #### Maker round 1
+
+This initial round of MAKER was designed to generate **high-confidence, evidence-supported gene models** that will be used to train *ab-initio* gene predictors (like SNAP and Augustus) in subsequent annotation rounds. The process relied exclusively on **homology evidence** (ESTs and proteins) and  **repeat masking** , with *ab-initio* prediction disabled.
+
+Prior to annotation, the genome was masked to identify and soft-mask repetitive elements. This is a critical step to prevent transposable elements and other low-complexity regions from being incorrectly annotated as protein-coding genes.
 
 ```bash
 #!/bin/bash
@@ -351,58 +401,363 @@ echo "Finished running maker"
 date
 ```
 
+```bash
+
+#-----Genome (these are always required)
+genome=/proj/snic2022-23-541/Beetle_project/Data/Genome/Contig_251_Tlin.fasta #genome sequence (fasta file or fasta embeded in
+GFF3 file)
+organism_type=eukaryotic #eukaryotic or prokaryotic. Default is eukaryotic
+
+#-----Re-annotation Using MAKER Derived GFF3
+maker_gff= #MAKER derived GFF3 file
+est_pass=0 #use ESTs in maker_gff: 1 = yes, 0 = no
+altest_pass=0 #use alternate organism ESTs in maker_gff: 1 = yes, 0 = no
+protein_pass=0 #use protein alignments in maker_gff: 1 = yes, 0 = no
+rm_pass=0 #use repeats in maker_gff: 1 = yes, 0 = no
+model_pass=0 #use gene models in maker_gff: 1 = yes, 0 = no
+pred_pass=0 #use ab-initio predictions in maker_gff: 1 = yes, 0 = no
+other_pass=0 #passthrough anyything else in maker_gff: 1 = yes, 0 = no
+
+#-----EST Evidence (for best results provide a file for at least one)
+est=/proj/snic2022-23-541/Beetle_project/Analysis/CD-HIT/CD_HIT-EST_Transcriptome.fasta.transdecoder.cds.fasta,/proj/snic2022-2
+3-541/Beetle_project/Data/Trancriptomes/Tlin_assembly/Trinity_v2_CDHit_0.95.fasta #set of ESTs or assembled mRNA-seq in fasta f
+ormat
+altest= #EST/cDNA sequence file in fasta format from an alternate organism
+est_gff= #aligned ESTs or mRNA-seq from an external GFF3 file
+altest_gff= #aligned ESTs from a closly relate species in GFF3 format
+
+#-----Protein Homology Evidence (for best results provide a file for at least one)
+protein=/proj/snic2022-23-541/Beetle_project/Data/Evidence_Data/Coleoptera_Evidence_Refseq.fasta,/proj/snic2022-23-541/Beetle_p
+roject/Data/Evidence_Data/refseq_db.fasta  #protein sequence file in fasta format (i.e. from mutiple organisms)
+protein_gff=  #aligned protein homology evidence from an external GFF3 file
+
+#-----Repeat Masking (leave values blank to skip repeat masking)
+model_org= #select a model organism for RepBase masking in RepeatMasker
+rmlib=/proj/snic2022-23-541/Beetle_project/Analysis/RepeatModeler/RM_11528.MonApr31245172023/consensi.fa.classified #provide an
+ organism specific repeat library in fasta format for RepeatMasker
+repeat_protein=/sw/bioinfo/maker/3.01.2-beta-mpi/rackham/data/te_proteins.fasta #provide a fasta file of transposable element p
+roteins for RepeatRunner
+rm_gff=/proj/snic2022-23-541/Beetle_project/Analysis/RepeatMasker/Trypodendron_lineatum.fna.preSunJul231907462023.RMoutput/Tryp
+odendron_lineatum.fna.out #pre-identified repeat elements from an external GFF3 file
+prok_rm=0 #forces MAKER to repeatmask prokaryotes (no reason to change this), 1 = yes, 0 = no
+softmask=1 #use soft-masking rather than hard-masking in BLAST (i.e. seg and dust filtering)
+
+#-----Gene Prediction
+snaphmm= #SNAP HMM file
+gmhmm= #GeneMark HMM file
+augustus_species= #Augustus gene prediction species model
+fgenesh_par_file= #FGENESH parameter file
+pred_gff= #ab-initio predictions from an external GFF3 file
+model_gff= #annotated gene models from an external GFF3 file (annotation pass-through)
+run_evm=0 #run EvidenceModeler, 1 = yes, 0 = no
+est2genome=1 #infer gene predictions directly from ESTs, 1 = yes, 0 = no
+protein2genome=1 #infer predictions from protein homology, 1 = yes, 0 = no
+trna=0 #find tRNAs with tRNAscan, 1 = yes, 0 = no
+snoscan_rrna= #rRNA file to have Snoscan find snoRNAs
+snoscan_meth= #-O-methylation site fileto have Snoscan find snoRNAs
+unmask=0 #also run ab-initio prediction programs on unmasked sequence, 1 = yes, 0 = no
+allow_overlap= #allowed gene overlap fraction (value from 0 to 1, blank for default)
+
+#-----Other Annotation Feature Types (features MAKER doesn't recognize)
+other_gff= #extra features to pass-through to final MAKER generated GFF3 file
+
+#-----External Application Behavior Options
+alt_peptide=C #amino acid used to replace non-standard amino acids in BLAST databases
+cpus=1 #max number of cpus to use in BLAST and RepeatMasker (not for MPI, leave 1 when using MPI)
+
+#-----MAKER Behavior Options
+max_dna_len=100000 #length for dividing up contigs into chunks (increases/decreases memory usage)
+min_contig=1 #skip genome contigs below this length (under 10kb are often useless)
+
+pred_flank=200 #flank for extending evidence clusters sent to gene predictors
+pred_stats=0 #report AED and QI statistics for all predictions as well as models
+AED_threshold=1 #Maximum Annotation Edit Distance allowed (bound by 0 and 1)
+min_protein=0 #require at least this many amino acids in predicted proteins
+alt_splice=0 #Take extra steps to try and find alternative splicing, 1 = yes, 0 = no
+always_complete=0 #extra steps to force start and stop codons, 1 = yes, 0 = no
+map_forward=0 #map names and attributes forward from old GFF3 genes, 1 = yes, 0 = no
+keep_preds=0 #Concordance threshold to add unsupported gene prediction (bound by 0 and 1)
+
+split_hit=10000 #length for the splitting of hits (expected max intron size for evidence alignments)
+min_intron=20 #minimum intron length (used for alignment polishing)
+single_exon=0 #consider single exon EST evidence when generating annotations, 1 = yes, 0 = no
+single_length=250 #min length required for single exon ESTs if 'single_exon is enabled'
+correct_est_fusion=0 #limits use of ESTs in annotation to avoid fusion genes
+
+tries=2 #number of times to try a contig if there is a failure for some reason
+clean_try=0 #remove all data from previous run before retrying, 1 = yes, 0 = no
+clean_up=0 #removes theVoid directory with individual analysis files, 1 = yes, 0 = no
+TMP= #specify a directory other than the system default temporary directory for temporary files
+```
+
+#### **Get some idea of how long it takes round 1 ...**
+
+```bash
+
+finishedjobinfo -j 44493339
+2024-01-28 03:03:16 jobid=44493339 jobstate=COMPLETED username=zaidemo account=naiss2023-5-461 nodes=r166 procs=20 partition=node qos=normal jobname=MAKER_R1 maxmemory_in_GiB=5.0 maxmemory_node=r166 timelimit=14-00:00:00 submit_time=2024-01-19T11:18:17 start_time=2024-01-19T11:22:04 end_time=2024-01-28T03:03:16 runtime=8-15:41:12 margin=5-08:18:48 queuetime=00:03:47
+```
+
+Since MAKER relies on **BLAST** to align all transcript and protein evidence against the genome, this initial alignment step is computationally intensive. With 12 processing cores, we estimate the run time to be at least several days. The total execution speed is dependent on the allocation of resources (more cores yield faster completion) and the **quality of the genome assembly** (more fragmented or smaller scaffolds lead to longer processing times). The round concludes with the assembly of the final Gene Feature Format (GFF) and FASTA output files.
+
+```bash
+cd Trypodendron_lineatum.maker.output/
+
+gff3_merge -s -d Trypodendron_lineatum_master_datastore_index.log > Trypodendron_lineatum.gff
+
+# create proteins and transcripts fasta file
+# you'll need to load maker environment . . .  probably
+fasta_merge -d Trypodendron_lineatum_master_datastore_index.log
+
+# GFF w/o the sequences
+gff3_merge -n -s -d Trypodendron_lineatum_master_datastore_index.log > Trypodendron_lineatum.all.maker.noseq.gff
+```
+
+#### Training *Ab-Initio* Gene Predictors
+
+The primary goal of the second phase is to leverage the high-confidence gene models generated in Round 1 (based on transcript and protein evidence) to **train** two key *ab-initio* gene prediction tools: **SNAP** (Simplified Non-redundant Annotation Program) and  **AUGUSTUS** .
+
+*Ab-initio* prediction is crucial because it can identify novel genes or gene structures that lack significant homology to known transcripts or proteins.
+
+**1. Training the SNAP Predictor**
+
+SNAP is a Hidden Markov Model (HMM)-based gene finder that is highly effective when trained on an organism-specific dataset.
+
+* **Extraction:** The first step is to filter and reformat the GFF output from MAKER Round 1 to create a clean, non-redundant set of gene models. This is done using MAKER's accompanying utility scripts (e.g., `gff3_merge`, `fathom`, and `forge`).
+* **Training:** These filtered models are fed into the SNAP training module, which learns the specific statistical properties (codon usage, splice sites, exon/intron lengths) of the genes within the *Trypodendron lineatum* genome.
+* **Output:** The result is a **SNAP HMM file** (`snaphmm`), which is a trained model file ready to be used in MAKER Round 3.
+
+```bash
+#load the bioinformatics module and maker
+
+mkdir snap
+mkdir snap/
+cd snap/round1
+
+# export 'confident' gene models from MAKER and rename to something meaningful
+maker2zff -x 0.25 -l 50 -d ../MAKER_R1/Trypodendron_lineatum.maker.output/Trypodendron_lineatum_master_datastore_index.log
+rename 's/genome/Trypodendron_lineatum_makerR1/g' 
+
+# gather some stats and validate
+
+fathom genome.ann genome.dna -gene-stats > gene-stats.log 2>&1
+fathom genome.ann genome.dna -validate > validate.log 2>&1
+
+# collect the training sequences and annotations, plus 1000 surrounding bp for training
+fathom genome.ann genome.dna -categorize 1000 > categorize.log 2>&1
+fathom uni.ann uni.dna -export 1000 -plus > uni-plus.log 2>&1
 
 
-#### MAKER
+# create the training parameters
+mkdir params
+cd params
+forge ../export.ann ../export.dna > ../forge.log 2>&1
+cd ..
+# assembly the HMM
+hmm-assembler.pl genome . > genome.hmm
+```
 
-#### BRAKER
+**2. Training the AUGUSTUS Predictor**
+
+AUGUSTUS is another powerful *ab-initio* gene finder that also uses HMMs. Unlike SNAP, AUGUSTUS requires a separate training process that often involves using a small, confirmed set of high-quality gene models.
+
+* **Extraction & Filtering:** A similar process is used to extract a subset of the best gene models from MAKER Round 1's GFF.
+* **Training:** These models are used to train AUGUSTUS, creating a new, species-specific parameter set. This step often uses scripts like **`autoAug`** (or similar tools) to automate the training process.
+* **Output:** The result is a new, species-specific **AUGUSTUS parameter set** saved under a new species name (e.g., `augustus_species=Trypodendron_lineatum`). This parameter set will be used in MAKER Round 3.
+
+**First, we must put together training sequences using the gene models we created in our first run of MAKER. We do this by issuing the following command to excise the regions that contain mRNA annotations based on our initial MAKER run (with 1000bp on each side).**
+
+```bash
+
+awk -v OFS="\t" '{ if ($3 == "mRNA") print $1, $4, $5 }' /proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.maker.output/Trypodendron_lineatum.all.maker.noseq.gff | \
+awk -v OFS="\t" '{ if ($2 < 1000) print $1, "0", $3+1000; else print $1, $2-1000, $3+1000 }' | \
+bedtools getfasta -fi /proj/snic2022-23-541/Beetle_project/Data/Genome/Genomes_Results/Trypodendron_lineatum.fna -bed - -fo /proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.maker.output/Trypodendron_lineatum.all.maker.transcripts1000.fasta
+```
+
+```bash
+awk -v OFS="\t" '{ if ($3 == "mRNA") print $1, $4, $5 }' Trypodendron_lineatum.all.maker.noseq.gff | awk -v OFS="\t" '{ if ($2 < 1000) print $1, "0", $3+1000; else print $1, $2-1000, $3+1000 }' |  bedtools getfasta -fi Trypodendron_lineatum.fna -bed - -fo Coordinates_command.fast
+```
+
+#### BUSCO with Augustus
+
+```bash
+#!/bin/sh
+#SBATCH -A naiss2023-5-461
+#SBATCH -p core -n 16
+#SBATCH -t 3-00:00:00
+#SBATCH -J BUSCO_Insecta_odb10
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+
+#Load modules
+module load bioinfo-tools BUSCO/5.2.2
+module load bioinfo-tools perl/5.26.2
+module load bioinfo-tools perl_modules/5.26.2
+module load bioinfo-tools augustus/3.4.0
+xsource $AUGUSTUS_CONFIG_COPY
+
+
+# busco -i [SEQUENCE_FILE] -l [LINEAGE] -o [OUTPUT_NAME] -m [MODE] [OTHER OPTIONS]
+
+
+
+run_BUSCO.py -i "${QRY}" -l "${BUSCO_LINEAGE_SETS}/insecta_odb10" -o "$(basename ${QRY})_insecta_odb10_0.95" -m genome -c 12 --long --augustus_parameters='--progress=true'
+
+
+# To submit
+sbatch --export=QRY=Trypodendron_lineatum.all.maker.transcripts1000.fasta BUSCO_AUGUSTUS.sh 
+```
+
+**Once BUSCO is complete, it will give you an idea of how complete your annotation is (though be cautious, because we haven't filtered away known alternative transcripts that will be binned as duplicates). We need to do some post-processing of the HMM models to get them ready for MAKER. First, we'll rename the files within **`/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/BUSCO_Augustus/BUSCO_4.1/run_insecta_odb10/augustus_output/retraining_parameters/BUSCO_BUSCO_4.1`.
+
+```bash
+#!/bin/bash
+
+# Define the new basename
+new_basename="Trypodendron_lineatum_"
+
+
+# Iterate through the files and rename them
+for filename in BUSCO_BUSCO_4.1_*; do
+    if [ -e "$filename" ]; then
+        new_filename="${filename/BUSCO_BUSCO_4.1_/$new_basename}"
+        mv "$filename" "$new_filename"
+        echo "Renamed: $filename to $new_filename"
+    fi
+done
+```
+
+**Then, we must copy these into the** **`$AUGUSTUS_CONFIG_PATH` species HMM location so they are accessible by Augustus and MAKER.**
+
+```bash
+/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/BUSCO_Augustus/augustus_config/species
+
+mkdir Trypodendron_lineatum
+
+cp /proj/snic2022-23-541/Beetle_project/Analysis/MAKER/BUSCO_Augustus/BUSCO_4.1/run_insecta_odb10/augustus_output/retraining_parameters/BUSCO_BUSCO_4.1/Trypodendron_lineatum_* .
+```
+
+#### MAKER With *Ab Initio* Gene Predictors
+
+Now let's run a second round of MAKER, but this time we will have SNAP and Augustus run within MAKER to help create more sound gene models. MAKER will use the annotations from these two prediction programs when constructing its models. Before running, let's first recycle the mapping of empicial evidence we have from the first MAKER round, so we don't have to perform all the BLASTs, etc. again.
+
+```bash
+# transcript alignments
+awk '{ if ($2 == "est2genome") print $0 }' Trypodendron_lineatum.all.maker.noseq.gff > Trypodendron_lineatum.all.maker.noseq.est2genome.gff
+
+/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.maker.output/Trypodendron_lineatum.all.maker.noseq.est2genome.gff
+
+# protein alignments
+awk '{ if ($2 == "protein2genome") print $0 }' Trypodendron_lineatum.all.maker.noseq.gff > Trypodendron_lineatum.all.maker.noseq.protein2genome.gff
+
+/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.maker.output/Trypodendron_lineatum.all.maker.noseq.protein2genome.gff
+
+# repeat alignments
+awk '{ if ($2 ~ "repeat") print $0 }' Trypodendron_lineatum.all.maker.noseq.gff > Trypodendron_lineatum.all.maker.noseq.repeats.gff
+
+
+/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.maker.output/Trypodendron_lineatum.all.maker.noseq.repeats.gff
+```
+
+#### MKAER R2
+
+**This second round worked without snap hmm**
+
+```bash
+#-----Genome (these are always required)
+genome=/crex/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.fasta #genome sequence (fasta file or fasta embeded in GFF3 file)
+organism_type=eukaryotic #eukaryotic or prokaryotic. Default is eukaryotic
+
+#-----Re-annotation Using MAKER Derived GFF3
+maker_gff= #MAKER derived GFF3 file
+est_pass=0 #use ESTs in maker_gff: 1 = yes, 0 = no
+altest_pass=0 #use alternate organism ESTs in maker_gff: 1 = yes, 0 = no
+protein_pass=0 #use protein alignments in maker_gff: 1 = yes, 0 = no
+rm_pass=0 #use repeats in maker_gff: 1 = yes, 0 = no
+model_pass=0 #use gene models in maker_gff: 1 = yes, 0 = no
+pred_pass=0 #use ab-initio predictions in maker_gff: 1 = yes, 0 = no
+other_pass=0 #passthrough anyything else in maker_gff: 1 = yes, 0 = no
+
+#-----EST Evidence (for best results provide a file for at least one)
+est= #set of ESTs or assembled mRNA-seq in fasta format
+altest= #EST/cDNA sequence file in fasta format from an alternate organism
+est_gff=/crex/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.maker.output_1/Trypodendron_lineatum.all.maker.noseq.est2genome.gff #aligned ESTs or mRNA-seq from an external GFF3 file
+altest_gff= #aligned ESTs from a closly relate species in GFF3 format
+
+#-----Protein Homology Evidence (for best results provide a file for at least one)
+protein=  #protein sequence file in fasta format (i.e. from mutiple organisms)
+protein_gff=/crex/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.maker.output_1/Trypodendron_lineatum.all.maker.noseq.protein2genome.gff  #aligned protein homology evidence from an external GFF3 file
+
+#-----Repeat Masking (leave values blank to skip repeat masking)
+model_org= #select a model organism for RepBase masking in RepeatMasker
+rmlib= #provide an organism specific repeat library in fasta format for RepeatMasker
+repeat_protein= #provide a fasta file of transposable element proteins for RepeatRunner
+rm_gff=/crex/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER_R1/Trypodendron_lineatum.maker.output_1/Trypodendron_lineatum.all.maker.noseq.repeats.gff #pre-identified repeat elements from an external GFF3 file
+prok_rm=0 #forces MAKER to repeatmask prokaryotes (no reason to change this), 1 = yes, 0 = no
+softmask=1 #use soft-masking rather than hard-masking in BLAST (i.e. seg and dust filtering)
+
+#-----Gene Prediction
+snaphmm= #SNAP HMM file
+gmhmm= #GeneMark HMM file
+augustus_species=Trypodendron_lineatum #Augustus gene prediction species model
+fgenesh_par_file= #FGENESH parameter file
+pred_gff= #ab-initio predictions from an external GFF3 file
+model_gff= #annotated gene models from an external GFF3 file (annotation pass-through)
+run_evm=0 #run EvidenceModeler, 1 = yes, 0 = no
+est2genome=1 #infer gene predictions directly from ESTs, 1 = yes, 0 = no
+protein2genome=1 #infer predictions from protein homology, 1 = yes, 0 = no
+trna=1 #find tRNAs with tRNAscan, 1 = yes, 0 = no
+snoscan_rrna= #rRNA file to have Snoscan find snoRNAs
+snoscan_meth= #-O-methylation site fileto have Snoscan find snoRNAs
+unmask=0 #also run ab-initio prediction programs on unmasked sequence, 1 = yes, 0 = no
+allow_overlap=0 #allowed gene overlap fraction (value from 0 to 1, blank for default)
+
+#-----Other Annotation Feature Types (features MAKER doesn't recognize)
+other_gff= #extra features to pass-through to final MAKER generated GFF3 file
+
+#-----External Application Behavior Options
+alt_peptide=C #amino acid used to replace non-standard amino acids in BLAST databases
+cpus=16 #max number of cpus to use in BLAST and RepeatMasker (not for MPI, leave 1 when using MPI)
+
+#-----MAKER Behavior Options
+max_dna_len=100000 #length for dividing up contigs into chunks (increases/decreases memory usage)
+min_contig=1 #skip genome contigs below this length (under 10kb are often useless)
+
+pred_flank=200 #flank for extending evidence clusters sent to gene predictors
+pred_stats=0 #report AED and QI statistics for all predictions as well as models
+AED_threshold=1 #Maximum Annotation Edit Distance allowed (bound by 0 and 1)
+min_protein=0 #require at least this many amino acids in predicted proteins
+alt_splice=0 #Take extra steps to try and find alternative splicing, 1 = yes, 0 = no
+always_complete=0 #extra steps to force start and stop codons, 1 = yes, 0 = no
+map_forward=0 #map names and attributes forward from old GFF3 genes, 1 = yes, 0 = no
+keep_preds=0 #Concordance threshold to add unsupported gene prediction (bound by 0 and 1)
+
+split_hit=10000 #length for the splitting of hits (expected max intron size for evidence alignments)
+min_intron=20 #minimum intron length (used for alignment polishing)
+single_exon=0 #consider single exon EST evidence when generating annotations, 1 = yes, 0 = no
+single_length=250 #min length required for single exon ESTs if 'single_exon is enabled'
+correct_est_fusion=0 #limits use of ESTs in annotation to avoid fusion genes
+
+tries=2 #number of times to try a contig if there is a failure for some reason
+clean_try=0 #remove all data from previous run before retrying, 1 = yes, 0 = no
+clean_up=0 #removes theVoid directory with individual analysis files, 1 = yes, 0 = no
+TMP=/scratch/44829956 #specify a directory other than the system default temporary directory for temporary files
+
+
+```
+
+
+A key strength of the MAKER pipeline is its  **iterative design** . We use the gene models generated in a previous round to refine and train the *ab initio* prediction algorithms (e.g., AUGUSTUS and SNAP), which in turn leads to better gene structure inference in the following round. This cycle involves repeating the annotation process (steps 4 and 5). The recommended best practice is to complete a minimum of three total MAKER rounds, as gains in accuracy typically start to decrease thereafter. Care must be taken to prevent the **overtraining** of the predictors. A simple method for evaluating the success of successive rounds and determining the stopping point is:
+
+**Comparing the number of predicted gene models and their resulting lengths after each iteration.**  You can find the script `AED_cdf_generator.pl` [here](https://github.com/mscampbell/Genome_annotation/blob/master/AED_cdf_generator.pl)
+
+```bash
+perl AED_cdf_generator.pl -b 0.025 Trypodendron_lineatum_master_datastore_index.all.makerR2.augustus.snap.gff
+
+```
 
 ### **Functional annotation and orthologs gene detection**
 
 ### **Gene family evolution (expansions and contractions)**
 
 ### **Reconstruction of phylogenetic trees**
-
-## Results
-
-#!/bin/bash
-#SBATCH -A naiss2023-5-461
-#SBATCH -p node
-#SBATCH -t 7-00:00:00
-#SBATCH -J MAKER_R1
-#SBATCH --mail-type=all
-#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
-
-# Load necessary modules
-
-module load bioinfo-tools
-module load maker/3.01.2-beta-mpi
-module load augustus/3.2.3
-module load perl_modules/5.18.4
-module load RepeatMasker/4.0.7_Perl5.24.1
-module load perl/5.24.1
-module load perl_modules/5.24.1
-module load module load blast/2.10.1
-
-# Set up Augustus configuration
-
-source $AUGUSTUS_CONFIG_COPY
-
-# Export MPI configuration
-
-export LD_PRELOAD=$MPI_ROOT/lib/libmpi.so
-export OMPI_MCA_mpi_warn_on_fork=0
-
-# Print start time
-
-echo "Running maker"
-date
-
-# Run MAKER with MPI
-
-mpiexec maker -cpus 1 -TMP $SNIC_TMP -fix_nucleotides maker_opts.ctl maker_bopts.ctl maker_exe.ctl
-
-# Print end time
-
-echo "Finished running maker"
-date
