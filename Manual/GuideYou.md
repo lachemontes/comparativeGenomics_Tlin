@@ -305,18 +305,57 @@ TransDecoder.Predict -t Transcriptome_file.fasta
 
 ```
 
-### **Genome annotation and quality assessment** 
+### **Genome annotation and quality assessment**
 
 Before **chatGPT** or any other AI tools existed, I got so much help from this two guys, Thanks to [Rick Masonbrink](https://bioinformaticsworkbook.org/dataAnalysis/GenomeAnnotation/Intro_To_Maker.html#gsc.tab=0) and [Daren Card](https://gist.github.com/darencard/bb1001ac1532dd4225b030cf0cd61ce2). They documented their genome annotation pipelines so well that they inspired me to create and share my own.  I also find it quite funny that the first author of **MAKER** has the same last name as the reggaeton singer **Yandel. Find here some playlist that helped me too** [Yandel spotify](https://open.spotify.com/artist/0eHQ9o50hj6ZDNBt6Ys1sD) and [YANDEL youtube](https://www.youtube.com/channel/UC-LRORSJOy5cOBd5TVVQ6Fw)
 
+
+#### Maker round 1
+
+```bash
+#!/bin/bash
+#SBATCH -A naiss2023-5-461
+#SBATCH -p node
+#SBATCH -t x-00:00:00
+#SBATCH -J MAKER_R1
+#SBATCH --mail-type=all
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+
+
+# Load necessary modules
+module load bioinfo-tools
+module load maker/3.01.2-beta-mpi
+module load augustus/3.2.3
+module load perl_modules/5.18.4
+module load RepeatMasker/4.0.7_Perl5.24.1
+module load perl/5.24.1
+module load perl_modules/5.24.1
+module load module load blast/2.10.1
+
+# Set up Augustus configuration
+source $AUGUSTUS_CONFIG_COPY
+
+# Export MPI configuration
+export LD_PRELOAD=$MPI_ROOT/lib/libmpi.so
+export OMPI_MCA_mpi_warn_on_fork=0
+
+# Print start time
+echo "Running maker"
+date
+
+# Run MAKER with MPI
+mpiexec maker -cpus 1 -TMP $SNIC_TMP -fix_nucleotides maker_opts.ctl maker_bopts.ctl maker_exe.ctl
+
+# Print end time
+echo "Finished running maker"
+date
+```
 
 
 
 #### MAKER
 
-
 #### BRAKER
-
 
 ### **Functional annotation and orthologs gene detection**
 
@@ -325,3 +364,45 @@ Before **chatGPT** or any other AI tools existed, I got so much help from this t
 ### **Reconstruction of phylogenetic trees**
 
 ## Results
+
+#!/bin/bash
+#SBATCH -A naiss2023-5-461
+#SBATCH -p node
+#SBATCH -t 7-00:00:00
+#SBATCH -J MAKER_R1
+#SBATCH --mail-type=all
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+
+# Load necessary modules
+
+module load bioinfo-tools
+module load maker/3.01.2-beta-mpi
+module load augustus/3.2.3
+module load perl_modules/5.18.4
+module load RepeatMasker/4.0.7_Perl5.24.1
+module load perl/5.24.1
+module load perl_modules/5.24.1
+module load module load blast/2.10.1
+
+# Set up Augustus configuration
+
+source $AUGUSTUS_CONFIG_COPY
+
+# Export MPI configuration
+
+export LD_PRELOAD=$MPI_ROOT/lib/libmpi.so
+export OMPI_MCA_mpi_warn_on_fork=0
+
+# Print start time
+
+echo "Running maker"
+date
+
+# Run MAKER with MPI
+
+mpiexec maker -cpus 1 -TMP $SNIC_TMP -fix_nucleotides maker_opts.ctl maker_bopts.ctl maker_exe.ctl
+
+# Print end time
+
+echo "Finished running maker"
+date
