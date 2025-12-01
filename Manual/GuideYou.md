@@ -953,6 +953,13 @@ perl AED_cdf_generator.pl -b 0.025 Trypodendron_lineatum_master_datastore_index.
 
 ```
 
+#### To count gene models after each round
+
+```
+cat <roundN.full.gff> | awk '{ if ($3 == "gene") print $0 }' | awk '{ sum += ($5 - $4) } END { print NR, sum / NR }'
+
+```
+
 #### Internal MAKER Statistics (Accuracy)
 
 MAKER itself provides two primary metrics within the final GFF3 output that evaluate how well each gene model is supported by the input evidence (ESTs, proteins, and *ab-initio* predictions).
@@ -970,7 +977,7 @@ MAKER itself provides two primary metrics within the final GFF3 output that eval
 
 ---
 
-## 2. Completeness Assessment (BUSCO)
+## Completeness Assessment (BUSCO)
 
 The **Benchmarking Universal Single-Copy Orthologs (BUSCO)** tool is the gold standard for evaluating the **completeness** of a genome assembly or its annotation.
 
@@ -981,7 +988,6 @@ The **Benchmarking Universal Single-Copy Orthologs (BUSCO)** tool is the gold st
   * **Fragmented:** Only a partial sequence of the gene is found.
   * **Missing:** The gene is not found in the annotation.
 * **Interpretation:** A good annotation typically aims for a high percentage of **Complete** BUSCOs (often **$\geq 90\%$**) and low percentages of Duplicated, Fragmented, and Missing genes.
-
 
 ```bash
 #!/bin/sh
@@ -1011,13 +1017,215 @@ run_BUSCO.py -i "${QRY}" -l "${BUSCO_LINEAGE_SETS}/insecta_odb10" -o "$(basename
 sbatch --export=QRY=/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER/Trypodendron_lineatum.maker.output/Trypodendron_lineatum.all.maker.transcripts.fasta
 ```
 
-### **Functional annotation** 
+### **Functional annotation**
 
+After obtaining the final set of predicted protein sequences from MAKER, the next critical step is  **Functional Annotation** . This process assigns biological roles, protein domains, and Gene Ontology (GO) terms to the predicted proteins, giving biological meaning to the genomic structures.
+
+We use **InterProScan** for this step. InterProScan integrates signatures from various primary protein signature databases (known as "applications") to provide a comprehensive functional analysis.
+
+The first script focuses on annotating **all protein sequences** derived from the final MAKER gene models.
+
+```bash
+#!/bin/bash
+#SBATCH -A naiss2023-5-461
+#SBATCH -p core -n 16
+#SBATCH -t 2-00:00:00
+#SBATCH -J InterPro_maker
+#BATCH --mail-type=all
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+
+
+module load bioinfo-tools InterProScan/5.62-94.0
+
+interproscan.sh -i /proj/snic2022-23-541/Beetle_project/Analysis/MAKER/MAKER/Trypod
+endron_lineatum.maker.output/Trypodendron_lineatum.all.maker.proteins.fasta -goterm
+s -t p -f TSV,XML -appl Gene3D,ProSitePatterns,PANTHER,CDD,Pfam,SUPERFAMILY,TMHMM -
+b /proj/snic2022-23-541/Beetle_project/Analysis/InterPro/Tlin_maker
+
+
+####
+
+#!/bin/bash
+#SBATCH -A naiss2023-5-461
+#SBATCH -p core -n 12
+#SBATCH -t 2-00:00:00
+#SBATCH -J InterPro_DB
+#BATCH --mail-type=all
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
+
+
+module load bioinfo-tools InterProScan/5.62-94.0
+
+interproscan.sh -i /proj/snic2022-23-541/Beetle_project/Analysis/CD-HIT/MAKER_R4.fasta -g
+oterms -t p -f TSV,XML -appl Gene3D,ProSitePatterns,PANTHER,CDD,Pfam,SUPERFAMILY,TMHMM -b /proj/
+snic2022-23-541/Beetle_project/Analysis/InterPro/Tlin_InterPro_MAKER_final
+```
 
 ### **Orthologs gene detection**
 
+The final stage of the pipeline involved comparative genomics to identify **orthologous gene groups** and assign functional roles. This is essential for understanding gene family evolution, including expansions and contractions, within the beetle lineage.
+
+#### 1. Preparing the Comparative Dataset
+
+To ensure robust orthology inference, a comprehensive set of protein sequences from multiple related species was assembled:
+
+* **Reference Data Acquisition:** Non-redundant, high-quality protein sequences were downloaded from the **NCBI RefSeq** database. The search utilized a targeted query (e.g., `("beetle species"[Organism] AND refseq[filter])`) for ten different beetle species.
+* **Species Included:** Proteins from the newly annotated *T. lineatum* were combined with nine other well-annotated beetle species ( *I. typographus* ,  *D. ponderosae* ,  *H. hampei* ,  *T. castaneum* ,  *A. glabripennis* ,  *C. maculatus* ,  *L. decemlineata* ,  *D. virgifera* , and  *Aethina tumida* ) to create a diverse dataset for orthology comparison.#### 2. Orthology Inference with OrthoFinder
+
+**[OrthoFinder](https://github.com/davidemms/OrthoFinder) (v2.5.2)** was used to group the protein sequences into **orthogroups** (sets of genes descended from a single gene in the last common ancestor).
+
+* **Methodology:** The program was run using rigorous, sequence-based methods to accurately infer evolutionary relationships:
+  * **Gene Tree Inference:** `-M msa` (gene tree inference was based on Multiple Sequence Alignment).
+  * **Multiple Sequence Alignment (MSA):** `-A mafft` (using the MAFFT aligner for high accuracy).
+* **Output:** The result was a comprehensive classification of all 10 beetle proteomes into orthogroups, forming the foundation for evolutionary analysis.
+
+```bash
+#!/bin/sh
+#SBATCH -A naiss2023-5-461
+#SBATCH -p node 
+#SBATCH -t 7-00:00:00
+#SBATCH -J OrthoFinder
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zaide.montes_ortiz@biol.lu.se
 
 
-### **Gene family evolution (expansions and contractions)**
+module load bioinfo-tools
+module load OrthoFinder/2.5.2
+module load MAFFT/7.205
+module load blast_databases
+module load blast/2.9.0+
+module load iqtree
 
-### **Reconstruction of phylogenetic trees**
+orthofinder.py -f Fastas -M msa -T iqtree -I 1.0 -S blast
+```
+
+### Functional Assignment to Orthogroups
+
+Before performing evolutionary rate analysis, the orthogroups needed biological meaning. Function was assigned using two complementary methods:
+
+* **InterProScan (v2.1.4-2):** This tool was run on the orthogroup sequences to assign **protein domains** and  **Gene Ontology (GO) terms** , providing structural and functional information.
+* **BLAST Searches:** A second functional layer was added by performing BLAST searches (e-value threshold **$\leq 1\text{e-}5$**) against the comprehensive  **NCBI non-redundant insect database** . Only non-redundant and significant hits were retained.
+
+**Critical Role:** This functional annotation of orthogroups was the final necessary step. It allowed the subsequent **CAFE analysis** (which detects significantly expanded or contracted gene families) to be biologically interpreted, linking evolutionary changes to specific protein functions or pathways.
+
+### Gene Family Evolution Analysis with CAFE
+
+The final step in the comparative genomics pipeline is the  **Computational Analysis of gene Family Evolution (CAFE)** . The purpose of CAFE is to statistically analyze the observed changes in gene family sizes (expansions and contractions) across the beetle phylogeny, accounting for the evolutionary history of the species.
+
+**What CAFE Does**
+
+CAFE utilizes a **birth-and-death stochastic process** to model the gain (birth) and loss (death) of genes within families over time across the branches of a phylogenetic tree. This model allows us to:
+
+1. Calculate a single parameter (**$\lambda$**) representing the average rate of gene family size change across the entire tree.
+2. Determine the **statistical significance** of gene family expansions or contractions in specific lineages.
+
+   Before running the analysis, CAFE5 was installed on the high-performance computing cluster (UPPMAX) using the following steps:
+3. **Download and Extract:** The CAFE5 source code was downloaded and extracted.
+   **Bash**
+
+   ```
+   wget https://github.com/hahnlab/5/releases/download/v5.1/CAFE5-5.1.0.tar.gz
+   tar -xvf CAFE5-5.1.0.tar.gz
+   cd CAFE5/
+   ```
+4. **Load Dependencies:** Required environment modules were loaded, specifically the `gcc` compiler and general `bioinfo-tools`.
+   **Bash**
+
+   ```
+   module load bioinfo-tools
+   module load gcc/9.2.0
+   ```
+5. **Compile:** The software was configured and compiled to create the executable binary.
+   **Bash**
+
+   ```
+   ./configure
+   make
+   ```
+
+   The final executable `cafe5` is located in the `CAFE5/bin/` directory.
+
+   **Input File Preparation**
+
+CAFE requires two main input files derived from the **OrthoFinder** output: the gene family size count matrix and the phylogenetic tree.
+
+**1.Creating the CAFE Gene Count Input File**
+
+The `Orthogroups.GeneCount.tsv` file from OrthoFinder needed reformatting to meet CAFE's specific input structure.
+
+* **Goal:** Remove the last column (`Total`) and add a descriptive `Desc` column at the beginning.
+
+**Bash**
+
+```
+# This is an atomic command sequence
+awk 'OFS="\t" {$NF=""; print}' Orthogroups.GeneCount.tsv > tmp && awk '{print "(null)""\t"$0}' tmp > cafe.input.tsv && sed -i '1s/(null)/Desc/g' cafe.input.tsv && rm tmp
+
+# In detail:
+# 1. 'awk ... > tmp': Removes the final (Total) column and pipes output to a temporary file (tmp).
+# 2. 'awk ... > cafe.input.tsv': Prepends "(null)" and a tab to every line in 'tmp', saving to the final input file.
+# 3. 'sed -i ...': Replaces "(null)" with the required header "Desc" only on the first line.
+# 4. 'rm tmp': Cleans up the temporary file.
+```
+
+**2.****Filtering Gene Families**
+
+To ensure the statistical model is robust, gene families were filtered using the `clade_and_size_filter.py` script:
+
+**Bash**
+
+```
+python ../tutorial/clade_and_size_filter.py -i cafe.input.tsv -o filtered.cafe.input.tsv -s 2> filtered.log
+```
+
+* **Clade Filter:** Only gene families with copies in at least two species were kept, which is a requirement for ancestral state reconstruction.
+* **Size Filter:** Gene families with **over 100 gene copies** in any species were separated. Large families can introduce excessive variance and compromise the estimation of the birth-death rate (**$\lambda$**). The smaller, filtered file (`filtered.cafe.input.tsv`) is used to estimate **$\lambda$**, which is then applied to the larger families.
+
+  3. **Converting the Species Tree to Ultrametric**
+
+CAFE requires a  **time-scaled, ultrametric tree** . An ultrametric tree is rooted and has edge lengths such that all tips (species) are equidistant from the root, often representing evolutionary time based on a molecular clock.
+
+This conversion was performed in **$\text{R}$** using the `ape` package:
+
+**R**
+
+```
+library(ape)
+
+# Read the phylogenetic tree inferred by OrthoFinder
+tree <- read.tree("SpeciesTree_rooted.txt")
+
+# Convert the tree to ultrametric using the chronos function
+ultrametric_tree <- chronos(tree)
+
+# Save the time-scaled tree for CAFE input
+write.tree(ultrametric_tree, file="SpeciesTree_rooted_ultrametric.txt")
+```
+
+#### Running CAFE
+
+### The main CAFE analysis was executed on the cluster using the prepared files:
+
+**Bash**
+
+```
+# ... SLURM header for resource allocation ...
+
+module load bioinfo-tools
+module load gcc/9.2.0
+
+../bin/cafe5 -i filtered.cafe.input.tsv -t SpeciesTree_rooted_ultrametric.txt
+```
+
+* **Input (`-i`):** The filtered gene count matrix (`filtered.cafe.input.tsv`).
+* **Tree (`-t`):** The time-scaled ultrametric tree (`SpeciesTree_rooted_ultrametric.txt`).
+
+  4. **Visualizing Results**
+
+The final results from CAFE were then visualized using the dedicated plotting tool **CafePlotter** to generate publication-quality figures, including the gene family changes mapped onto the phylogenetic tree.
+
+```
+# ... SLURM header for resource allocation ...
+
+/home/zaidemo/.local/bin/cafeplotter -i results/ -o plot_2/
+```
