@@ -1224,8 +1224,21 @@ module load gcc/9.2.0
 
 The final results from CAFE were then visualized using the dedicated plotting tool **CafePlotter** to generate publication-quality figures, including the gene family changes mapped onto the phylogenetic tree.
 
-```
+```bash
 # ... SLURM header for resource allocation ...
 
 /home/zaidemo/.local/bin/cafeplotter -i results/ -o plot_2/
 ```
+
+
+
+
+---
+## 🎉 Conclusion: Moving Forward
+
+The iterative process of annotation and comparative genomics is a continuous cycle of improvement and learning. We conclude this tutorial by embracing the spirit of innovation in bioinformatics. It could be better, I know! 
+
+> **“The most dangerous phrase in the language is, ‘We've always done it this way.’”**
+>
+> — Grace Hopper
+---
