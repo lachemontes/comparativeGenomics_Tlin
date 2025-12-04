@@ -1230,9 +1230,8 @@ The final results from CAFE were then visualized using the dedicated plotting to
 /home/zaidemo/.local/bin/cafeplotter -i results/ -o plot_2/
 ```
 
-
-
 ---
+
 ## Conclusion: Moving Forward
 
 The iterative process of annotation and comparative genomics is a continuous cycle of improvement and learning. I conclude this tutorial by embracing the spirit of innovation in bioinformatics. It could be better, I know!  I hope you finish on time!!!
@@ -1240,4 +1239,5 @@ The iterative process of annotation and comparative genomics is a continuous cyc
 > **“The most dangerous phrase in the language is, ‘We've always done it this way.’”**
 >
 > — Grace Hopper
+
 ---
