@@ -843,7 +843,7 @@ I run the `AED_cdf_generator.pl` after each round, to plot later the improvement
 
 I  ran BRAKER to produce the gff file to merge with MAKER genome annotation.
 
-#### BRAKER
+#### BRAKER and MAKER Round 4
 
 ```bash
 #!/bin/bash
@@ -902,7 +902,7 @@ snaphmm=/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/snapR2/Trypodendron_
 gmhmm= #GeneMark HMM file
 augustus_species=Trypodendron_lineatum #Augustus gene prediction species model
 fgenesh_par_file= #FGENESH parameter file
-pred_gff= #ab-initio predictions from an external GFF3 file
+pred_gff=pred_gff=braker.gff3 #ab-initio predictions from an external GFF3 file
 model_gff= #annotated gene models from an external GFF3 file (annotation pass-through)
 run_evm=0 #run EvidenceModeler, 1 = yes, 0 = no
 est2genome=0 #infer gene predictions directly from ESTs, 1 = yes, 0 = no
