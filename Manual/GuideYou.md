@@ -902,8 +902,8 @@ snaphmm=/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/snapR2/Trypodendron_
 gmhmm= #GeneMark HMM file
 augustus_species=Trypodendron_lineatum #Augustus gene prediction species model
 fgenesh_par_file= #FGENESH parameter file
-pred_gff=pred_gff=braker.gff3 #ab-initio predictions from an external GFF3 file
-model_gff= #annotated gene models from an external GFF3 file (annotation pass-through)
+pred_gff= #ab-initio predictions from an external GFF3 file
+model_gff=/crex/proj/snic2022-23-541/Beetle_project/Analysis/BRAKER/SINGULARITY/BRAKER_test1/braker/braker_test.gff #annotated gene models from an external GFF3 file (annotation pass-through)
 run_evm=0 #run EvidenceModeler, 1 = yes, 0 = no
 est2genome=0 #infer gene predictions directly from ESTs, 1 = yes, 0 = no
 protein2genome=0 #infer predictions from protein homology, 1 = yes, 0 = no
@@ -942,7 +942,7 @@ correct_est_fusion=0 #limits use of ESTs in annotation to avoid fusion genes
 tries=2 #number of times to try a contig if there is a failure for some reason
 clean_try=0 #remove all data from previous run before retrying, 1 = yes, 0 = no
 clean_up=0 #removes theVoid directory with individual analysis files, 1 = yes, 0 = no
-TMP=/scratch/44970268 #specify a directory other than the system default temporary directory for temporary files
+TMP=/scratch/45430835 #specify a directory other than the system default temporary directory for temporary files
 
 ```
 
