@@ -897,7 +897,7 @@ rm_gff= #pre-identified repeat elements from an external GFF3 file
 prok_rm=0 #forces MAKER to repeatmask prokaryotes (no reason to change this), 1 = yes, 0 = no
 softmask=1 #use soft-masking rather than hard-masking in BLAST (i.e. seg and dust filtering)
 
-#-----Gene Prediction
+#-----Gene Prediction (BRAKER3 Integration)
 snaphmm=/proj/snic2022-23-541/Beetle_project/Analysis/MAKER/snapR2/Trypodendron_lineatum_makerR2.hmm #SNAP HMM file
 gmhmm= #GeneMark HMM file
 augustus_species=Trypodendron_lineatum #Augustus gene prediction species model
