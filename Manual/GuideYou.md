@@ -515,7 +515,7 @@ gff3_merge -n -s -d Trypodendron_lineatum_master_datastore_index.log > Trypodend
 
 #### Training *Ab-Initio* Gene Predictors
 
-The primary goal of the second phase is to leverage the high-confidence gene models generated in Round 1 (based on transcript and protein evidence) to **train** two key *ab-initio* gene prediction tools: **SNAP** (Simplified Non-redundant Annotation Program) and  **AUGUSTUS** .
+The primary goal of the second phase is to leverage the high-confidence gene models generated in Round 1 (based on transcript and protein evidence) to **train** two key *ab-initio* gene prediction tools: [SNAP](https://github.com/KorfLab/SNAP/blob/master/README.md) (Simplified Non-redundant Annotation Program) and  **AUGUSTUS** .
 
 *Ab-initio* prediction is crucial because it can identify novel genes or gene structures that lack significant homology to known transcripts or proteins.
 
