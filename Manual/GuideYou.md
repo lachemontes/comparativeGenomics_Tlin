@@ -521,13 +521,14 @@ The primary goal of the second phase is to leverage the high-confidence gene mod
 
 **1. Training the SNAP Predictor**
 
-SNAP is a Hidden Markov Model (HMM)-based gene finder that is highly effective when trained on an organism-specific dataset.
+[SNAP](https://github.com/KorfLab/SNAP/blob/master/README.md) is a Hidden Markov Model (HMM)-based gene finder that is highly effective when trained on an organism-specific dataset.
 
 * **Extraction:** The first step is to filter and reformat the GFF output from MAKER Round 1 to create a clean, non-redundant set of gene models. This is done using MAKER's accompanying utility scripts (e.g., `gff3_merge`, `fathom`, and `forge`).
 * **Training:** These filtered models are fed into the SNAP training module, which learns the specific statistical properties (codon usage, splice sites, exon/intron lengths) of the genes within the *Trypodendron lineatum* genome.
 * **Output:** The result is a **SNAP HMM file** (`snaphmm`), which is a trained model file ready to be used in MAKER Round 3.
 
 ```bash
+# [SNAP](https://github.com/KorfLab/SNAP/blob/master/README.md)
 #load the bioinformatics module and maker
 
 mkdir snap
