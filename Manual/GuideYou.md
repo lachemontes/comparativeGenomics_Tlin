@@ -14,22 +14,25 @@ Additionally, Illumina short-read sequencing provided 10X Chromium libraries for
 
 ### Genomic data
 
-|          **Specie**          | **Family**               | **GenBank**         |
-| :---------------------------------: | ------------------------------ | ------------------------- |
-|      **Ips typographus**      | **Curculionidae**        | **GCA_016097725.1** |
-|      **Aethina tumida**      | **Nitidulidae**          | **GCA_024364675.1** |
-|    **Agrilus planipennis**    | **Buprestidae**          | **GCA_000699045.2** |
-| **Anoplophora glabripennis** | **Cerambycidae**         | **GCA_000390285.2** |
-| **Callosobruchus maculatus** | ***Chrysomelidae***    | **GCA_951848785.1** |
-|  **Dendroctonus ponderosae**  | **Curculionidae**        | **GCA_020466585.2** |
-|   **Diabrotica virgifera**   | **Chrysomelidae**        | **GCA_917563875.2** |
-|    **Hypothenemus hampei**    | **Curculionidae**        | **GCA_013372445.1** |
-| **Leptinotarsa decemlineata** | **Chrysomelidae**        | **GCA_000500325.2** |
-| **Nicrophorus vespilloides** | **Silphidae**            | **GCA_001412225.1** |
-|    **Onthophagus taurus**    | ***Scarabaeidae***     | **GCA_000648695.2** |
-|    **Tribolium castaneum**    | **Tenebrionidae**        | **GCA_000002335.3** |
-|   **Trypodendron lineatum**   | **Curculionidae**        | **TBA**             |
-|    **Dendroctonus valens**    | **CurculionidaeDiptera** | **GCA_024550625.1** |
+
+
+| Species                   | Family        | GenBank         | Published paper         | Level      |
+| ------------------------- | ------------- | --------------- | ----------------------- | ---------- |
+| Agrilus planipennis       | Buprestidae   | GCA_000699045.2 | McKenna et al., 2016    | Scaffold   |
+| Anoplophora glabripennis  | Cerambycidae  | GCA_000390285.2 | NA                      | Scaffold   |
+| Callosobruchus maculatus  | Chrysomelidae | GCA_951848785.1 | NA                      | Contig     |
+| Diabrotica virgifera      | Chrysomelidae | GCA_917563875.2 | Coates et al., 2023     | Chromosome |
+| Leptinotarsa decemlineata | Chrysomelidae | GCA_000500325.2 | Schoville et al., 2018  | Scaffold   |
+| Ips typographus           | Curculionidae | -               | Powell et al.,2021      | Contig     |
+| Dendroctonus ponderosae   | Curculionidae | GCA_020466585.2 | Keeling et al.,2022     | Scaffold   |
+| Hypothenemus hampei       | Curculionidae | GCA_013372445.1 | Vega et al., 2015       | Scaffold   |
+| Trypodendron lineatum     | Curculionidae | JBSOPU000000000 | -                       | Contig     |
+| Dendroctonus valens       | Curculionidae | GCA_024550625.1 | Liu et al., 2022        | Scaffold   |
+| Aethina tumida            | Nitidulidae   | GCA_024364675.1 | NA                      | Chromosome |
+| Onthophagus taurus        | Scarabaeidae  | GCA_000648695.2 | NA                      | Scaffold   |
+| Nicrophorus vespilloides  | Silphidae     | GCA_001412225.1 | Cunningham et al., 2015 | Scaffold   |
+| Tribolium castaneum       | Tenebrionidae | GCA_000002335.3 | Kim et ., 2010          | Chromosome |
+| Drosophila melanogaster   | Drosophilidae | GCA_000001215.4 | -                       | Chromosome |
 
 ### Evidence data for genome annotation with MAKER and BRAKER
 
