@@ -41,7 +41,6 @@
   - Gene family dynamics analyzed using **CAFE**:  
     - **Expansions:** 404  
     - **Contractions:** 2,026  
-  - Results reveal significant gene family reductions, correlating with ecological specialization and dependence on fungal symbiosis.  
 
 ---
 
