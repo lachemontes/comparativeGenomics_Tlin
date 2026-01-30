@@ -20,9 +20,8 @@
 
 ## **My Research Contributions**  👩‍💻
 
-### 1. **Comparative Genomics and Genome Assembly**  
-- **Genome Assembly**  
-  - Achieved using Oxford Nanopore and Illumina sequencing.  
+### 1. **Genome annotation and comparative genomics**  
+- **Genome Assembly from Biwas et.,2024**   
   - Assembly metrics:  
     - **Contigs:** 833  
     - **Total length:** 83.6 Mb  
