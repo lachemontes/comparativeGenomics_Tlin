@@ -14,8 +14,6 @@ Additionally, Illumina short-read sequencing provided 10X Chromium libraries for
 
 ### Genomic data
 
-
-
 | Species                   | Family        | GenBank         | Published paper         | Level      |
 | ------------------------- | ------------- | --------------- | ----------------------- | ---------- |
 | Agrilus planipennis       | Buprestidae   | GCA_000699045.2 | McKenna et al., 2016    | Scaffold   |

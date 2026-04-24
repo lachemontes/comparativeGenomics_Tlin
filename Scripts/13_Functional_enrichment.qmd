@@ -1,0 +1,478 @@
+---
+title: "Functional enrichment of species-specific gene families in *Trypodendron lineatum*"
+subtitle: "Response to Reviewer 1, comment #4 (lines 446-448)"
+author: "Montes-Ortiz et al. - Pheromone Group, Lund University"
+date: 24/04/2026
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: show
+    df-print: paged
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+---
+
+# Aim
+
+Functional enrichment analysis (GO + Pfam domains) of the species-specific
+gene families of *T. lineatum* identified by OrthoFinder.
+
+**Definition of species-specific:** orthogroups where only *T. lineatum* has
+genes assigned (all other species empty). This excludes singletons (genes in
+`Orthogroups_UnassignedGenes.tsv`) and captures expanded gene families
+exclusive to the *T. lineatum* lineage relative to the 8 species compared.
+
+------------------------------------------------------------------------
+# 0. Install topGO
+
+```{r}
+if (!requireNamespace("BiocManager", quietly=TRUE))
+    install.packages("BiocManager")
+BiocManager::install()
+```
+```{r}
+# Install topGO
+
+#BiocManager::install("topGO")
+
+```
+
+
+# 1. Setup
+
+```{r setup}
+# ---- Installation (uncomment only the first time) ----
+# install.packages(c("BiocManager", "tidyverse", "ggplot2", "scales", "here"))
+# BiocManager::install(c("topGO", "Rgraphviz"))
+
+library(tidyverse)
+library(topGO)
+library(scales)
+library(here)
+
+set.seed(42)
+
+out_dir <- here("results", "enrichment_species_specific")
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+```{r}
+remove.packages("cli")
+install.packages("cli")
+```
+
+
+```{r}
+# Ejecutar una vez al inicio, después de library(topGO)
+conflicted::conflicts_prefer(dplyr::select, dplyr::filter, dplyr::mutate)
+# Si no tienes 'conflicted': install.packages("conflicted")
+```
+
+------------------------------------------------------------------------
+
+# 2. Parameters
+
+```{r params}
+# Update these paths to wherever your files live
+interpro_tsv    <- "Tlin_interpro.tsv"
+orthogroups_tsv <- "Orthogroups.tsv"
+
+# EXACT name of the T. lineatum column in Orthogroups.tsv
+target_species  <- "Fix_Trypodendron_lineatum"
+
+# Thresholds
+fdr_threshold   <- 0.05
+min_node_size   <- 5    # topGO: minimum genes annotated per GO term
+min_pfam_count  <- 2    # Pfam: domains with at least N genes to be tested
+```
+
+------------------------------------------------------------------------
+```{r}
+file.info(interpro_tsv)$size / 1024^2   # debe dar ~6 (MB)
+```
+
+# 3. Parsing InterProScan
+
+InterProScan TSV with `--goterms`. The file has 13 or 14 columns depending on
+the row (column 14 = GO terms when there is an InterPro match; absent otherwise).
+
+```{r parse-interpro}
+# install.packages("data.table")  # solo la primera vez
+library(data.table)
+
+ipr_cols <- c("protein_id", "md5", "length", "analysis",
+              "sig_acc", "sig_desc", "start", "end",
+              "score", "status", "date",
+              "ipr_acc", "ipr_desc", "go_terms", "pathways")
+
+ipr_dt <- fread(interpro_tsv, sep = "\t", header = FALSE,
+                fill = TRUE, na.strings = c("", "NA", "-"),
+                colClasses = "character", quote = "")
+
+setnames(ipr_dt, old = names(ipr_dt), new = ipr_cols[seq_len(ncol(ipr_dt))])
+
+ipr <- as_tibble(ipr_dt)
+rm(ipr_dt); gc()
+
+cat("Unique proteins in IPS:", n_distinct(ipr$protein_id), "\n")
+cat("Analyses present:      ", paste(unique(ipr$analysis), collapse = ", "), "\n")
+cat("Total rows:            ", nrow(ipr), "\n")
+```
+
+## 3.1 gene → GO mapping
+
+```{r gene2go}
+gene2go_df <- ipr %>%
+  dplyr::filter(!is.na(go_terms)) %>%
+  dplyr::select(protein_id, go_terms) %>%
+  tidyr::separate_rows(go_terms, sep = "\\|") %>%
+  dplyr::mutate(go_terms = stringr::str_extract(go_terms, "GO:\\d{7}")) %>%
+  dplyr::filter(!is.na(go_terms)) %>%
+  dplyr::distinct()
+
+# Named list for topGO: gene -> vector of GO IDs
+gene2GO <- split(gene2go_df$go_terms, gene2go_df$protein_id)
+
+cat("Genes with at least one GO:  ", length(gene2GO), "\n")
+cat("Total gene-GO assignments:   ", nrow(gene2go_df), "\n")
+```
+
+## 3.2 gene → Pfam mapping
+
+```{r gene2pfam}
+gene2pfam <- ipr %>%
+  filter(analysis == "Pfam") %>%
+  select(protein_id, sig_acc, sig_desc) %>%
+  distinct()
+
+cat("Genes with at least one Pfam:", n_distinct(gene2pfam$protein_id), "\n")
+cat("Unique Pfam domains:         ", n_distinct(gene2pfam$sig_acc), "\n")
+```
+
+------------------------------------------------------------------------
+
+# 4. Identifying species-specific orthogroups
+
+```{r species-specific}
+
+og <- readr::read_tsv(orthogroups_tsv, col_types = cols(.default = "c"))
+
+stopifnot(target_species %in% colnames(og))
+
+other_species <- base::setdiff(colnames(og), c("Orthogroup", target_species))
+
+og_specific <- og %>%
+  dplyr::filter(!is.na(.data[[target_species]]) & .data[[target_species]] != "") %>%
+  dplyr::filter(dplyr::if_all(dplyr::all_of(other_species), ~ is.na(.) | . == ""))
+
+cat("Species-specific orthogroups:", nrow(og_specific), "\n")
+
+specific_genes <- og_specific %>%
+  dplyr::pull(!!target_species) %>%
+  stringr::str_split(",\\s*") %>%
+  unlist() %>%
+  stringr::str_trim() %>%
+  purrr::discard(~ .x == "") %>%
+  unique()
+
+cat("Genes in species-specific orthogroups:", length(specific_genes), "\n")
+cat("  - With InterProScan annotation:    ",
+    sum(specific_genes %in% ipr$protein_id), "\n")
+cat("  - With at least one GO term:       ",
+    sum(specific_genes %in% names(gene2GO)), "\n")
+
+# Save for Supplementary Material
+writeLines(specific_genes, file.path(out_dir, "S_TableX_species_specific_gene_ids.txt"))
+readr::write_tsv(og_specific, file.path(out_dir, "S_TableX_species_specific_orthogroups.tsv"))
+```
+
+------------------------------------------------------------------------
+
+# 5. GO enrichment with topGO
+
+## 5.1 Universe
+
+The universe is all *T. lineatum* genes with at least one GO assignment from
+InterProScan. Genes without any GO term contribute no information to the test.
+
+```{r universe}
+all_annotated <- names(gene2GO)
+gene_factor <- factor(as.integer(all_annotated %in% specific_genes))
+names(gene_factor) <- all_annotated
+
+cat("Universe (genes with GO):           ", length(gene_factor), "\n")
+cat("Test set (specific genes with GO):  ", sum(gene_factor == 1), "\n")
+cat("Test set / Universe (%):            ",
+    round(100 * sum(gene_factor == 1) / length(gene_factor), 2), "%\n")
+```
+
+## 5.2 Enrichment function
+
+`weight01` (topGO's recommended default) corrects for the GO hierarchy by
+discounting signal that propagates from child to parent terms. We also report
+`classic` (uncorrected) and BH-adjusted FDR for transparency.
+
+```{r topgo-fn}
+run_topgo <- function(ontology) {
+  go_data <- new("topGOdata",
+                 description = paste("Species-specific", ontology),
+                 ontology    = ontology,
+                 allGenes    = gene_factor,
+                 annot       = annFUN.gene2GO,
+                 gene2GO     = gene2GO,
+                 nodeSize    = min_node_size)
+
+  result_w01 <- runTest(go_data, algorithm = "weight01", statistic = "fisher")
+  result_cla <- runTest(go_data, algorithm = "classic",  statistic = "fisher")
+
+  n_nodes <- length(usedGO(go_data))
+
+  tab <- GenTable(go_data,
+                  classicFisher = result_cla,
+                  weightFisher  = result_w01,
+                  orderBy       = "weightFisher",
+                  topNodes      = n_nodes,
+                  numChar       = 1000)
+
+  tab <- tab %>%
+    mutate(
+      Ontology       = ontology,
+      classicFisher  = as.numeric(gsub("<", "", classicFisher)),
+      weightFisher   = as.numeric(gsub("<", "", weightFisher)),
+      FDR_BH         = p.adjust(weightFisher, method = "BH"),
+      fold_enrichment = (Significant / sum(gene_factor == 1)) /
+                        (Annotated    / length(gene_factor))
+    ) %>%
+    as_tibble()
+
+  list(data = go_data, result = result_w01, table = tab)
+}
+
+go_bp <- run_topgo("BP")
+go_mf <- run_topgo("MF")
+go_cc <- run_topgo("CC")
+
+go_all <- bind_rows(go_bp$table, go_mf$table, go_cc$table) %>%
+  arrange(Ontology, weightFisher)
+
+go_sig <- go_all %>% filter(weightFisher < fdr_threshold)
+
+cat("Significant GO terms (weightFisher <", fdr_threshold, "):\n")
+go_sig %>% count(Ontology) %>% print()
+```
+
+## 5.3 Export full table
+
+```{r export-go}
+write_tsv(go_all, file.path(out_dir, "S_TableX_GO_enrichment_all.tsv"))
+write_tsv(go_sig, file.path(out_dir, "S_TableX_GO_enrichment_significant.tsv"))
+```
+
+------------------------------------------------------------------------
+
+# 6. Pfam domain enrichment
+
+Fisher's exact test (one-sided, `greater`) per domain + BH correction.
+
+```{r pfam-enrich}
+pfam_universe <- unique(gene2pfam$protein_id)
+pfam_test_set <- base::intersect(specific_genes, pfam_universe)
+
+n_test  <- length(pfam_test_set)
+n_univ  <- length(pfam_universe)
+
+cat("Pfam universe:", n_univ, "| Pfam test set:", n_test, "\n")
+
+pfam_counts <- gene2pfam %>%
+  dplyr::group_by(sig_acc, sig_desc) %>%
+  dplyr::summarise(
+    n_total   = dplyr::n_distinct(protein_id),
+    n_in_test = sum(unique(protein_id) %in% pfam_test_set),
+    .groups   = "drop"
+  ) %>%
+  dplyr::filter(n_total >= min_pfam_count)
+
+pfam_enrich <- pfam_counts %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(
+    a = n_in_test,                                       # test + with domain
+    b = n_total - n_in_test,                             # non-test + with domain
+    c = n_test - n_in_test,                              # test + no domain
+    d = (n_univ - n_test) - (n_total - n_in_test),       # non-test + no domain
+    pvalue = fisher.test(matrix(c(a, c, b, d), nrow = 2),
+                         alternative = "greater")$p.value,
+    fold_enrichment = (n_in_test / n_test) / (n_total / n_univ)
+  ) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(FDR = p.adjust(pvalue, method = "BH")) %>%
+  dplyr::arrange(FDR, pvalue) %>%
+  dplyr::select(sig_acc, sig_desc,
+                n_in_test, n_total, fold_enrichment, pvalue, FDR,
+                dplyr::everything(), -a, -b, -c, -d)
+
+pfam_sig <- pfam_enrich %>% dplyr::filter(FDR < fdr_threshold, n_in_test >= 2)
+
+cat("Significant Pfam domains (FDR <", fdr_threshold, "):", nrow(pfam_sig), "\n")
+
+readr::write_tsv(pfam_enrich, file.path(out_dir, "S_TableX_Pfam_enrichment_all.tsv"))
+readr::write_tsv(pfam_sig,    file.path(out_dir, "S_TableX_Pfam_enrichment_significant.tsv"))
+```
+
+------------------------------------------------------------------------
+
+# 7. Visualization
+
+## 7.1 GO: top terms per ontology
+
+```{r plot-go, fig.width=10, fig.height=8}
+if (nrow(go_sig) > 0) {
+  plot_go <- go_sig %>%
+    group_by(Ontology) %>%
+    slice_min(weightFisher, n = 15) %>%
+    ungroup() %>%
+    mutate(
+      Term = str_trunc(Term, 55),
+      Term = fct_reorder(Term, -log10(weightFisher))
+    )
+
+  p_go <- ggplot(plot_go, aes(x = -log10(weightFisher), y = Term,
+                              fill = fold_enrichment, size = Significant)) +
+    geom_point(shape = 21, color = "black", stroke = 0.3) +
+    facet_wrap(~ Ontology, scales = "free_y", ncol = 1,
+               labeller = labeller(Ontology = c(
+                 BP = "Biological Process",
+                 MF = "Molecular Function",
+                 CC = "Cellular Component"))) +
+    scale_fill_viridis_c(option = "plasma", name = "Fold\nenrichment") +
+    scale_size_continuous(name = "Genes", range = c(2, 7)) +
+    labs(x = expression(-log[10]("weight01 p-value")), y = NULL,
+         title = "GO enrichment - T. lineatum species-specific gene families") +
+    theme_bw(base_size = 11) +
+    theme(strip.background = element_rect(fill = "grey90"),
+          panel.grid.minor = element_blank())
+
+  print(p_go)
+
+  ggsave(file.path(out_dir, "FigureSX_GO_enrichment.png"),
+         p_go, width = 10, height = 9, dpi = 300)
+  ggsave(file.path(out_dir, "FigureSX_GO_enrichment.pdf"),
+         p_go, width = 10, height = 9)
+} else {
+  cat("No significant GO terms to plot.\n")
+}
+```
+
+## 7.2 Pfam: top enriched domains
+
+```{r plot-pfam, fig.width=9, fig.height=7}
+if (nrow(pfam_sig) > 0) {
+  plot_pfam <- pfam_sig %>%
+    slice_min(FDR, n = 20) %>%
+    mutate(
+      label = paste0(sig_acc, " - ", str_trunc(sig_desc, 45)),
+      label = fct_reorder(label, -log10(FDR))
+    )
+
+  p_pfam <- ggplot(plot_pfam,
+                   aes(x = -log10(FDR), y = label,
+                       fill = fold_enrichment, size = n_in_test)) +
+    geom_point(shape = 21, color = "black", stroke = 0.3) +
+    scale_fill_viridis_c(option = "viridis", name = "Fold\nenrichment") +
+    scale_size_continuous(name = "Genes in\ntest set", range = c(2, 8)) +
+    labs(x = expression(-log[10]("FDR")), y = NULL,
+         title = "Pfam domain enrichment - T. lineatum species-specific gene families") +
+    theme_bw(base_size = 11) +
+    theme(panel.grid.minor = element_blank())
+
+  print(p_pfam)
+
+  ggsave(file.path(out_dir, "FigureSX_Pfam_enrichment.png"),
+         p_pfam, width = 9, height = 7, dpi = 300)
+  ggsave(file.path(out_dir, "FigureSX_Pfam_enrichment.pdf"),
+         p_pfam, width = 9, height = 7)
+} else {
+  cat("No significant Pfam domains to plot.\n")
+}
+```
+
+------------------------------------------------------------------------
+
+# 8. Summary by biological category
+
+Thematic classification useful for drafting the discussion (lines 446-448).
+
+```{r summary-biology}
+biology_keywords <- list(
+  "Detoxification / xenobiotic metabolism" = c("cytochrome P450", "P450",
+      "glutathione", "GST", "UDP-glucuronosyl", "carboxylesterase",
+      "epoxide", "ABC transporter"),
+  "Chemoreception"                          = c("odorant", "olfactory",
+      "gustatory", "chemosensory", "pheromone"),
+  "Digestion / carbohydrate metabolism"     = c("glycos", "cellulase",
+      "xylanase", "mannanase", "chitin", "lipase", "peptidase"),
+  "Immunity / defense"                      = c("immun", "antimicrobial",
+      "defensin", "toll", "serine protease inhibitor"),
+  "Cuticle / structural"                    = c("cuticle", "chitin binding"),
+  "Reproduction / development"              = c("vitellogenin", "yolk",
+      "oogenesis", "spermatogenesis")
+)
+
+classify_term <- function(term) {
+  hits <- map_chr(names(biology_keywords), function(cat) {
+    if (any(str_detect(tolower(term),
+                       tolower(biology_keywords[[cat]])))) cat else NA_character_
+  })
+  hits <- hits[!is.na(hits)]
+  if (length(hits) == 0) "Other / uncharacterized" else paste(hits, collapse = "; ")
+}
+
+if (nrow(go_sig) > 0) {
+  go_sig_cat <- go_sig %>%
+    mutate(Category = map_chr(Term, classify_term)) %>%
+    arrange(Category, weightFisher)
+  write_tsv(go_sig_cat, file.path(out_dir, "S_TableX_GO_enrichment_categorized.tsv"))
+  cat("=== Significant GO terms by biological category ===\n")
+  go_sig_cat %>% count(Category, sort = TRUE) %>% print()
+}
+
+if (nrow(pfam_sig) > 0) {
+  pfam_sig_cat <- pfam_sig %>%
+    mutate(Category = map_chr(sig_desc, classify_term)) %>%
+    arrange(Category, FDR)
+  write_tsv(pfam_sig_cat, file.path(out_dir, "S_TableX_Pfam_enrichment_categorized.tsv"))
+  cat("\n=== Significant Pfam domains by biological category ===\n")
+  pfam_sig_cat %>% count(Category, sort = TRUE) %>% print()
+}
+```
+
+------------------------------------------------------------------------
+
+# 9. Final metrics for the manuscript
+
+```{r final-stats}
+cat("===== SUMMARY FOR LINES 446-448 =====\n\n")
+cat("Species-specific orthogroups:      ", nrow(og_specific), "\n")
+cat("Tlin genes in these orthogroups:   ", length(specific_genes), "\n")
+cat("  With InterProScan annotation:    ",
+    sum(specific_genes %in% ipr$protein_id),
+    sprintf(" (%.1f%%)\n", 100 * sum(specific_genes %in% ipr$protein_id) / length(specific_genes)))
+cat("  With GO term assigned:           ",
+    sum(specific_genes %in% names(gene2GO)),
+    sprintf(" (%.1f%%)\n", 100 * sum(specific_genes %in% names(gene2GO)) / length(specific_genes)))
+cat("\n")
+cat("Significant GO BP terms:           ", sum(go_sig$Ontology == "BP"), "\n")
+cat("Significant GO MF terms:           ", sum(go_sig$Ontology == "MF"), "\n")
+cat("Significant GO CC terms:           ", sum(go_sig$Ontology == "CC"), "\n")
+cat("Significant Pfam domains:          ", nrow(pfam_sig), "\n")
+```
+
+------------------------------------------------------------------------
+
+# 10. Session info
+
+```{r session}
+sessionInfo()
+```
