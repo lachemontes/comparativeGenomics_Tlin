@@ -45,3 +45,15 @@
 
 ## **Reproducibility**  🔄 
 All scripts and a detailed Markdown guide are provided to ensure the reproducibility of our findings.  
+
+---
+# Wanna cite me? If yes, here is the link to the paper
+[Comparative genomics reveal signatures of ecological specialization in the striped ambrosia beetle *Trypodendron lineatum*](https://link.springer.com/article/10.1186/s12864-026-13049-3)
+
+---
+
+Montes-Ortiz, Z., Powell, D., Vogel, H., Löfstedt, C., & Andersson, M. N. (2026).
+Comparative genomics reveal signatures of ecological specialization in the striped
+ambrosia beetle *Trypodendron lineatum*. *BMC Genomics*, 27(1), 549.
+[https://doi.org/10.1186/s12864-026-13049-3](https://doi.org/10.1186/s12864-026-13049-3)
+
