@@ -1,5 +1,5 @@
-# **StripedBeetleGenomics_Project**  🪲💻🧬
-**Comparative genomics and orthology analysis of the striped ambrosia beetle, *Trypodendron lineatum*: Functional, evolutionary, and ecological implications**  
+🪲💻🧬
+#**Comparative genomics and orthology analysis of the striped ambrosia beetle, *Trypodendron lineatum*: Functional, evolutionary, and ecological implications**  
 
 ---
 
